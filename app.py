@@ -50,11 +50,11 @@ def add_marks():
 
 def teacher_login_callback():
     teachers = {
-        "kalpana.d": {"password": "rec", "courses": ["POAI", "SC", "CN", "OOPJ", "Maths"]},
-        "teacher2": {"password": "password2", "courses": ["POAI", "SC"]},
-        "teacher3": {"password": "password3", "courses": ["CN", "Maths"]},
-        "teacher4": {"password": "password4", "courses": ["OOPJ", "Maths"]},
-        "teacher5": {"password": "password5", "courses": ["POAI", "SC", "OOPJ"]},
+        "kalpana.d": {"password": "rec", "courses": ["SC"]},
+        "preethi.e": {"password": "rec", "courses": ["POAI"]},
+        "gunasekar.s": {"password": "rec", "courses": ["CN"]},
+        "vijayakumar.r": {"password": "rec", "courses": ["OOPJ"]},
+        "sriram.s": {"password": "rec", "courses": ["Maths"]},
     }
     
     if st.session_state.teacher_username in teachers and st.session_state.teacher_password == teachers[st.session_state.teacher_username]["password"]:
