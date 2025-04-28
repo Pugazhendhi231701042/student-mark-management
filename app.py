@@ -14,8 +14,8 @@ initialize_session_state()
 
 # Dummy student data (using the list you provided)
 student_data = {
-    "Roll Number": [231701001, 231701002, 231701003, 231701004, 231701005],
-    "Name": ["AADHITH KUMAR S V", "AASHISH P", "AKASH E", "ANISH D", "ARJUN V"]
+    "Roll Number": [231701001, 231701002, 231701003, 231701004, 231701005, 231701042],
+    "Name": ["AADHITH KUMAR S V", "AASHISH P", "AKASH E", "ANISH D", "ARJUN V", "PUGAZHENDHI B"]
 }
 
 student_df = pd.DataFrame(student_data)
