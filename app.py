@@ -138,9 +138,9 @@ def student_dashboard():
             pdf.add_page()
             pdf.set_font("Arial", size=12)
 
-            online_image_url = "https://via.placeholder.com/150"  # Replace with your online image URL
+            online_image_url = "https://via.placeholder.com/100"  # Replace with your online image URL
             try:
-                pdf.image(online_image_url, 10, 10, w=30)  # You might need to adjust width and height
+                pdf.image(online_image_url, 10, 10, w=20)
             except Exception as e:
                 st.warning(f"Error loading online image: {e}")
 
@@ -153,7 +153,7 @@ def student_dashboard():
             pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
             pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
 
-             pdf_bytes = pdf.output(dest="S").encode("latin-1")
+            pdf_bytes = pdf.output(dest="S").encode("latin-1")
             st.download_button(
                 label="Download PDF",
                 data=pdf_bytes,
@@ -211,19 +211,17 @@ def admin_dashboard():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         with col2:
-             if st.button("Download All Marksheets (ZIP)"):
+            if st.button("Download All Marksheets (ZIP)"):
                 pdf_bytes_list = []
                 for roll, row in st.session_state.master_df.iterrows():
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", size=12)
-
-                    online_image_url = "https://via.placeholder.com/150/0000FF/FFFFFF?Text=Logo"  # Example URL
+                    online_image_url = "https://via.placeholder.com/50/FF0000"  # Example URL for admin PDF
                     try:
-                        pdf.image(online_image_url, 10, 10, w=30)
+                        pdf.image(online_image_url, 10, 10, w=10)
                     except Exception as e:
-                        st.warning(f"Error loading online image: {e}")
-
+                        st.warning(f"Error loading online image for admin PDF: {e}")
                     pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
                     pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
@@ -233,9 +231,7 @@ def admin_dashboard():
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
                     total_marks = calculate_total(row)
                     pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
-                    pdf_bytes = pdf.output(dest="S").encode("latin-1")
-                    pdf_bytes_list.append(pdf_bytes)
-
+                    pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
 
                 # Create a zip file for all PDFs
                 zip_buffer = io.BytesIO()
