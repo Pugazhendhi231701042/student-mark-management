@@ -26,7 +26,7 @@ def teacher_login_callback():
         st.session_state.user_role = "teacher"
         st.toast("Teacher login successful!", icon="✅")
     else:
-        st.error("Invalid username or password.")
+        st.error("No Bro!, It's Very Wrong Bro!")
 
 def student_login_callback():
     if st.session_state.student_roll in st.session_state.master_df["Roll Number"].astype(str).values:
