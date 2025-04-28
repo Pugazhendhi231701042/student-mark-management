@@ -191,4 +191,30 @@ def admin_dashboard():
     st.subheader("Admin (HoD) Dashboard")
     st.button("Logout", on_click=logout_callback)
 
-    if not st.session_state
+    if not st.session_state.master_df.empty:
+        st.session_state.master_df["Total"] = st.session_state.master_df.apply(calculate_total, axis=1)
+
+        display_columns = {
+            "Roll Number": "Roll No.",
+            "Name": "Student Name",
+            "Principles of AI": "POAI",
+            "Software Construction": "SC",
+            "Computer Networks": "Comp. Networks",
+            "Object Oriented Programming Using Java": "OOPJ",
+            "Mathematics": "Maths",
+            "Total": "Total Marks"
+        }
+
+        display_df = st.session_state.master_df.rename(columns=display_columns)
+        st.dataframe(display_df)
+
+# Main login or dashboard logic
+if st.session_state.logged_in:
+    if st.session_state.user_role == "teacher":
+        teacher_dashboard()
+    elif st.session_state.user_role == "student":
+        student_dashboard()
+    elif st.session_state.user_role == "admin":
+        admin_dashboard()
+else:
+    login()
