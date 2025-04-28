@@ -21,13 +21,13 @@ def calculate_total(row):
     return sum(valid_marks)
 
 def teacher_login_callback():
-    if st.session_state.teacher_username == TEACHER_CREDENTIALS["username"] and st.session_state.teacher_password == TEACHER_CREDENTIALS["password"]:
+    if st.session_state.teacher_username == "kalpana.d" and st.session_state.teacher_password == "rec":
         st.session_state.logged_in = True
         st.session_state.user_role = "teacher"
-        st.toast("Teacher login successful!", icon="✅")
+        st.success("Teacher login successful!")
     else:
-        st.error("No Bro!, It's Very Wrong Bro!")
-
+        st.error("Invalid username or password.")
+        
 def student_login_callback():
     if st.session_state.student_roll in st.session_state.master_df["Roll Number"].astype(str).values:
         st.session_state.logged_in = True
