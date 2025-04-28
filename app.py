@@ -152,56 +152,82 @@ def student_dashboard():
             )
 
 def admin_dashboard():
-    st.subheader("Admin (HoD) Dashboard - All Student Marks")
+    st.subheader("Admin (HoD) Dashboard")
     st.button("Logout", on_click=logout_callback)
 
+    st.subheader("Add New Student")
+    with st.form("add_student_form"):
+        new_roll_number = st.number_input("New Student Roll Number:", min_value=1, step=1)
+        new_student_name = st.text_input("New Student Name:")
+        add_button = st.form_submit_button("Add Student")
+
+        if add_button:
+            if new_roll_number in st.session_state.master_df.index:
+                st.error(f"Roll Number {new_roll_number} already exists.")
+            elif new_student_name:
+                new_student_data = pd.DataFrame({
+                    "Name": [new_student_name],
+                    "POAI": [None],
+                    "SC": [None],
+                    "CN": [None],
+                    "OOPJ": [None],
+                    "Maths": [None],
+                }, index=[new_roll_number])
+                st.session_state.master_df = pd.concat([st.session_state.master_df, new_student_data])
+                st.success(f"Student '{new_student_name}' with Roll Number {new_roll_number} added successfully!")
+            else:
+                st.error("Student Name cannot be empty.")
+
     if not st.session_state.master_df.empty:
+        st.subheader("Master Mark Table")
         master_df_with_total = st.session_state.master_df.copy()
         master_df_with_total["Total"] = master_df_with_total.apply(calculate_total, axis=1)
-
         st.dataframe(master_df_with_total)
 
-        if st.button("Download All Marks (CSV)"):
-            csv = master_df_with_total.to_csv(index=True).encode('utf-8')
-            st.download_button(
-                label="Download CSV",
-                data=csv,
-                file_name="all_student_marks.csv",
-                mime="text/csv",
-            )
+        st.subheader("Download Options")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Download All Marks (CSV)"):
+                csv = master_df_with_total.to_csv(index=True).encode('utf-8')
+                st.download_button(
+                    label="Download CSV",
+                    data=csv,
+                    file_name="all_student_marks.csv",
+                    mime="text/csv",
+                )
+        with col2:
+            if st.button("Download All Marksheets (ZIP)"):
+                pdf_bytes_list = []
+                for roll, row in st.session_state.master_df.iterrows():
+                    pdf = FPDF()
+                    pdf.add_page()
+                    pdf.set_font("Arial", size=12)
+                    pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
+                    pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
+                    pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+                    for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
+                        mark = row[col] if pd.notna(row[col]) else "N/A"
+                        pdf.cell(200, 10, txt=f"{col}: {mark}", ln=1, align="L")
+                    pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+                    total_marks = calculate_total(row)
+                    pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
+                    pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
 
-        if st.button("Download All Marksheets (PDF - Individual)"):
-            pdf_bytes_list = []
-            for roll, row in st.session_state.master_df.iterrows():
-                pdf = FPDF()
-                pdf.add_page()
-                pdf.set_font("Arial", size=12)
-                pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
-                pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
-                pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
-                for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
-                    mark = row[col] if pd.notna(row[col]) else "N/A"
-                    pdf.cell(200, 10, txt=f"{col}: {mark}", ln=1, align="L")
-                pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
-                total_marks = calculate_total(row)
-                pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
-                pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
+                # Create a zip file for all PDFs
+                import io
+                import zipfile
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for i, pdf_bytes in enumerate(pdf_bytes_list):
+                        roll_number = st.session_state.master_df.index[i]
+                        zf.writestr(f"marksheet_{roll_number}.pdf", pdf_bytes)
 
-            # Create a zip file for all PDFs
-            import io
-            import zipfile
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-                for i, pdf_bytes in enumerate(pdf_bytes_list):
-                    roll_number = st.session_state.master_df.index[i]
-                    zf.writestr(f"marksheet_{roll_number}.pdf", pdf_bytes)
-
-            st.download_button(
-                label="Download All Marksheets (ZIP)",
-                data=zip_buffer.getvalue(),
-                file_name="all_marksheets.zip",
-                mime="application/zip",
-            )
+                st.download_button(
+                    label="Download All Marksheets (ZIP)",
+                    data=zip_buffer.getvalue(),
+                    file_name="all_marksheets.zip",
+                    mime="application/zip",
+                )
 
 def main():
     login()
