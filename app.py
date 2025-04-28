@@ -19,22 +19,39 @@ def calculate_total(row):
     return sum(valid_marks)
 
 def add_marks():
+    # Initialize missing session state variables for marks
+    if "new_pai_marks" not in st.session_state:
+        st.session_state.new_pai_marks = None
+    if "new_sc_marks" not in st.session_state:
+        st.session_state.new_sc_marks = None
+    if "new_cn_marks" not in st.session_state:
+        st.session_state.new_cn_marks = None
+    if "new_oopj_marks" not in st.session_state:
+        st.session_state.new_oopj_marks = None
+    if "new_math_marks" not in st.session_state:
+        st.session_state.new_math_marks = None
+    if "new_roll_number" not in st.session_state:
+        st.session_state.new_roll_number = ""
+    if "new_name" not in st.session_state:
+        st.session_state.new_name = ""
+
     if st.session_state.new_roll_number and st.session_state.new_name:
         new_row = pd.DataFrame({
             "Roll Number": [st.session_state.new_roll_number],
             "Name": [st.session_state.new_name],
-            "POAI": [st.session_state.new_pai_marks if st.session_state.new_pai_marks is not None else None],
-            "SC": [st.session_state.new_sc_marks if st.session_state.new_sc_marks is not None else None],
-            "CN": [st.session_state.new_cn_marks if st.session_state.new_cn_marks is not None else None],
-            "OOPJ": [st.session_state.new_oopj_marks if st.session_state.new_oopj_marks is not None else None],
-            "Maths": [st.session_state.new_math_marks if st.session_state.new_math_marks is not None else None],
+            "Principles of AI": [st.session_state.new_pai_marks if st.session_state.new_pai_marks is not None else None],
+            "Software Construction": [st.session_state.new_sc_marks if st.session_state.new_sc_marks is not None else None],
+            "Computer Networks": [st.session_state.new_cn_marks if st.session_state.new_cn_marks is not None else None],
+            "Object Oriented Programming Using Java": [st.session_state.new_oopj_marks if st.session_state.new_oopj_marks is not None else None],
+            "Mathematics": [st.session_state.new_math_marks if st.session_state.new_math_marks is not None else None],
         })
+        # Check if the roll number already exists
         if st.session_state.new_roll_number in st.session_state.master_df["Roll Number"].values:
             st.error(f"Roll Number '{st.session_state.new_roll_number}' already exists.")
         else:
             st.session_state.master_df = pd.concat([st.session_state.master_df, new_row], ignore_index=True)
             st.success(f"Marks for '{st.session_state.new_name}' added successfully!")
-            # Clear form after successful submission
+            # Clear the form inputs after successful submission
             st.session_state.new_roll_number = ""
             st.session_state.new_name = ""
             st.session_state.new_pai_marks = None
@@ -44,6 +61,7 @@ def add_marks():
             st.session_state.new_math_marks = None
     else:
         st.error("Roll Number and Name are required.")
+
 
 def staff_login_callback():
     staff = {
