@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from fpdf import FPDF
+import io
+import zipfile
+from PIL import Image  # For handling images in PDF
 
 # Initialize session state variables
 if "logged_in" not in st.session_state:
@@ -134,6 +137,18 @@ def student_dashboard():
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
+
+            # Add an image (replace 'path/to/your/logo.png' with the actual path)
+            try:
+                img = Image.open("https://www.rajalakshmi.org/image/logo2.png")  # Ensure 'logo.png' exists in the same directory or provide the full path
+                img_w, img_h = img.size
+                aspect_ratio = img_h / img_w
+                desired_width = 30
+                desired_height = desired_width * aspect_ratio
+                pdf.image("logo.png", 10, 10, w=desired_width, h=desired_height)
+            except FileNotFoundError:
+                st.warning("Logo image not found. Skipping logo in PDF.")
+
             pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll_number}", ln=1, align="C")
             pdf.cell(200, 10, txt=f"Name: {student_data['Name']}", ln=1, align="L")
             pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
@@ -187,14 +202,19 @@ def admin_dashboard():
         st.subheader("Download Options")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Download All Marks (CSV)"):
-                csv = master_df_with_total.to_csv(index=True).encode('utf-8')
-                st.download_button(
-                    label="Download CSV",
-                    data=csv,
-                    file_name="all_student_marks.csv",
-                    mime="text/csv",
-                )
+            def download_xlsx():
+                output = io.BytesIO()
+                master_df_with_total.to_excel(output, index=True, sheet_name="Student Marks")
+                processed_data = output.getvalue()
+                return processed_data
+
+            xlsx_file = download_xlsx()
+            st.download_button(
+                label="Download All Marks (XLSX)",
+                data=xlsx_file,
+                file_name="all_student_marks.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
         with col2:
             if st.button("Download All Marksheets (ZIP)"):
                 pdf_bytes_list = []
@@ -202,6 +222,16 @@ def admin_dashboard():
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", size=12)
+                    # Add an image to each PDF
+                    try:
+                        img = Image.open("https://www.rajalakshmi.org/image/logo2.png")  # Use the same logo as in student's PDF
+                        img_w, img_h = img.size
+                        aspect_ratio = img_h / img_w
+                        desired_width = 30
+                        desired_height = desired_width * aspect_ratio
+                        pdf.image("logo.png", 10, 10, w=desired_width, h=desired_height)
+                    except FileNotFoundError:
+                        st.warning("Logo image not found. Skipping logo in PDF.")
                     pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
                     pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
@@ -214,8 +244,6 @@ def admin_dashboard():
                     pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
 
                 # Create a zip file for all PDFs
-                import io
-                import zipfile
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
                     for i, pdf_bytes in enumerate(pdf_bytes_list):
