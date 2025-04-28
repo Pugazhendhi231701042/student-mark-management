@@ -138,16 +138,11 @@ def student_dashboard():
             pdf.add_page()
             pdf.set_font("Arial", size=12)
 
-            # Add an image (replace 'path/to/your/logo.png' with the actual path)
+            online_image_url = "https://via.placeholder.com/150"  # Replace with your online image URL
             try:
-                img = Image.open("https://www.rajalakshmi.org/image/logo2.png")  # Ensure 'logo.png' exists in the same directory or provide the full path
-                img_w, img_h = img.size
-                aspect_ratio = img_h / img_w
-                desired_width = 30
-                desired_height = desired_width * aspect_ratio
-                pdf.image("logo.png", 10, 10, w=desired_width, h=desired_height)
-            except FileNotFoundError:
-                st.warning("Logo image not found. Skipping logo in PDF.")
+                pdf.image(online_image_url, 10, 10, w=30)  # You might need to adjust width and height
+            except Exception as e:
+                st.warning(f"Error loading online image: {e}")
 
             pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll_number}", ln=1, align="C")
             pdf.cell(200, 10, txt=f"Name: {student_data['Name']}", ln=1, align="L")
@@ -158,7 +153,7 @@ def student_dashboard():
             pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
             pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
 
-            pdf_bytes = pdf.output(dest="S").encode("latin-1")
+             pdf_bytes = pdf.output(dest="S").encode("latin-1")
             st.download_button(
                 label="Download PDF",
                 data=pdf_bytes,
@@ -216,22 +211,19 @@ def admin_dashboard():
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         with col2:
-            if st.button("Download All Marksheets (ZIP)"):
+             if st.button("Download All Marksheets (ZIP)"):
                 pdf_bytes_list = []
                 for roll, row in st.session_state.master_df.iterrows():
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", size=12)
-                    # Add an image to each PDF
+
+                    online_image_url = "https://via.placeholder.com/150/0000FF/FFFFFF?Text=Logo"  # Example URL
                     try:
-                        img = Image.open("https://www.rajalakshmi.org/image/logo2.png")  # Use the same logo as in student's PDF
-                        img_w, img_h = img.size
-                        aspect_ratio = img_h / img_w
-                        desired_width = 30
-                        desired_height = desired_width * aspect_ratio
-                        pdf.image("logo.png", 10, 10, w=desired_width, h=desired_height)
-                    except FileNotFoundError:
-                        st.warning("Logo image not found. Skipping logo in PDF.")
+                        pdf.image(online_image_url, 10, 10, w=30)
+                    except Exception as e:
+                        st.warning(f"Error loading online image: {e}")
+
                     pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
                     pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
@@ -241,7 +233,9 @@ def admin_dashboard():
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
                     total_marks = calculate_total(row)
                     pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
-                    pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
+                    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+                    pdf_bytes_list.append(pdf_bytes)
+
 
                 # Create a zip file for all PDFs
                 zip_buffer = io.BytesIO()
