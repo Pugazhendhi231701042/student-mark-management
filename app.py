@@ -3,7 +3,6 @@ import pandas as pd
 from fpdf import FPDF
 import io
 import zipfile
-from PIL import Image  # For handling images in PDF
 
 # Initialize session state variables
 if "logged_in" not in st.session_state:
@@ -137,13 +136,6 @@ def student_dashboard():
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
-
-            online_image_url = "https://via.placeholder.com/100"  # Replace with your online image URL
-            try:
-                pdf.image(online_image_url, 10, 10, w=20)
-            except Exception as e:
-                st.warning(f"Error loading online image: {e}")
-
             pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll_number}", ln=1, align="C")
             pdf.cell(200, 10, txt=f"Name: {student_data['Name']}", ln=1, align="L")
             pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
@@ -217,11 +209,6 @@ def admin_dashboard():
                     pdf = FPDF()
                     pdf.add_page()
                     pdf.set_font("Arial", size=12)
-                    online_image_url = "https://via.placeholder.com/50/FF0000"  # Example URL for admin PDF
-                    try:
-                        pdf.image(online_image_url, 10, 10, w=10)
-                    except Exception as e:
-                        st.warning(f"Error loading online image for admin PDF: {e}")
                     pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
                     pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
                     pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
