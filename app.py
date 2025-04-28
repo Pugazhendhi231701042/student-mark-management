@@ -7,20 +7,31 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user_role" not in st.session_state:
     st.session_state.user_role = None
+if "staff_username" not in st.session_state:
+    st.session_state.staff_username = None
 if "student_roll_number" not in st.session_state:
     st.session_state.student_roll_number = None
 if "master_df" not in st.session_state:
-    # 5 students
+    # Initial 5 students
     student_data = {
         "Roll Number": [231701001, 231701002, 231701003, 231701004, 231701005],
         "Name": ["AADHITH KUMAR S V", "AASHISH P", "AKASH E", "ANISH D", "ARJUN V"],
-        "POAI": [None, None, None, None, None],
-        "SC": [None, None, None, None, None],
-        "CN": [None, None, None, None, None],
-        "OOPJ": [None, None, None, None, None],
-        "Maths": [None, None, None, None, None]
+        "POAI": [None] * 5,
+        "SC": [None] * 5,
+        "CN": [None] * 5,
+        "OOPJ": [None] * 5,
+        "Maths": [None] * 5,
     }
-    st.session_state.master_df = pd.DataFrame(student_data)
+    st.session_state.master_df = pd.DataFrame(student_data).set_index("Roll Number")
+
+# Staff credentials and subjects
+STAFF_CREDENTIALS = {
+    "preethi": {"password": "rec", "subject": "POAI"},
+    "kalpana": {"password": "rec", "subject": "SC"},
+    "gunasekar": {"password": "rec", "subject": "CN"},
+    "vijayakumar": {"password": "rec", "subject": "OOPJ"},
+    "sriram": {"password": "rec", "subject": "Maths"},
+}
 
 # Function to calculate the total marks
 def calculate_total(row):
@@ -28,52 +39,17 @@ def calculate_total(row):
     valid_marks = [mark for mark in marks if mark is not None]
     return sum(valid_marks)
 
-def add_marks():
-    if st.session_state.new_roll_number and st.session_state.new_name:
-        new_row = pd.DataFrame({
-            "Roll Number": [st.session_state.new_roll_number],
-            "Name": [st.session_state.new_name],
-            "POAI": [st.session_state.new_pai_marks if st.session_state.new_pai_marks is not None else None],
-            "SC": [st.session_state.new_sc_marks if st.session_state.new_sc_marks is not None else None],
-            "CN": [st.session_state.new_cn_marks if st.session_state.new_cn_marks is not None else None],
-            "OOPJ": [st.session_state.new_oopj_marks if st.session_state.new_oopj_marks is not None else None],
-            "Maths": [st.session_state.new_math_marks if st.session_state.new_math_marks is not None else None],
-        })
-        if st.session_state.new_roll_number in st.session_state.master_df["Roll Number"].values:
-            st.error(f"Roll Number '{st.session_state.new_roll_number}' already exists.")
-        else:
-            st.session_state.master_df = pd.concat([st.session_state.master_df, new_row], ignore_index=True)
-            st.success(f"Marks for '{st.session_state.new_name}' added successfully!")
-            # Clear form after successful submission
-            st.session_state.new_roll_number = ""
-            st.session_state.new_name = ""
-            st.session_state.new_pai_marks = None
-            st.session_state.new_sc_marks = None
-            st.session_state.new_cn_marks = None
-            st.session_state.new_oopj_marks = None
-            st.session_state.new_math_marks = None
-    else:
-        st.error("Roll Number and Name are required.")
-
 def staff_login_callback():
-    staff = {
-        "preethi": {"password": "rec", "subject": "POAI"},
-        "kalpana": {"password": "rec", "subject": "SC"},
-        "gunasekar": {"password": "rec", "subject": "CN"},
-        "vijayakumar": {"password": "rec", "subject": "OOPJ"},
-        "sriram": {"password": "rec", "subject": "Maths"},
-    }
-
-    if st.session_state.staff_username in staff and st.session_state.staff_password == staff[st.session_state.staff_username]["password"]:
+    if st.session_state.staff_username in STAFF_CREDENTIALS and st.session_state.staff_password == STAFF_CREDENTIALS[st.session_state.staff_username]["password"]:
         st.session_state.logged_in = True
         st.session_state.user_role = "staff"
-        st.session_state.staff_subject = staff[st.session_state.staff_username]["subject"]
-        st.success(f"{st.session_state.staff_username} login successful!")
+        st.session_state.staff_subject = STAFF_CREDENTIALS[st.session_state.staff_username]["subject"]
+        st.success(f"{st.session_state.staff_username} login successful for {st.session_state.staff_subject}!")
     else:
         st.error("Invalid username or password.")
 
 def student_login_callback():
-    if st.session_state.student_roll in st.session_state.master_df["Roll Number"].astype(str).values and st.session_state.student_password == "rec":
+    if st.session_state.student_roll in st.session_state.master_df.index.astype(str).values and st.session_state.student_password == "rec":
         st.session_state.logged_in = True
         st.session_state.user_role = "student"
         st.session_state.student_roll_number = st.session_state.student_roll
@@ -92,6 +68,7 @@ def admin_login_callback():
 def logout_callback():
     st.session_state.logged_in = False
     st.session_state.user_role = None
+    st.session_state.staff_username = None
     st.session_state.student_roll_number = None
     st.session_state.staff_subject = None
     st.success("Logged out successfully!")
@@ -103,78 +80,128 @@ def login():
     if role == "Teacher":
         username = st.text_input("Username:", key="staff_username")
         password = st.text_input("Password:", type="password", key="staff_password")
-        login_button = st.button("Teacher Login", on_click=staff_login_callback)
+        st.button("Teacher Login", on_click=staff_login_callback)
 
     elif role == "Student":
         roll_number = st.text_input("Enter your Roll Number:", key="student_roll")
         password = st.text_input("Enter your Password:", type="password", key="student_password")
-        login_button = st.button("View Marks", on_click=student_login_callback)
+        st.button("View Marks", on_click=student_login_callback)
 
     elif role == "Admin":
         username = st.text_input("Admin Username:", key="admin_username")
         password = st.text_input("Admin Password:", type="password", key="admin_password")
-        login_button = st.button("Admin Login", on_click=admin_login_callback)
+        st.button("Admin Login", on_click=admin_login_callback)
 
 def staff_dashboard():
-    st.subheader(f"{st.session_state.staff_subject} Staff Dashboard")
+    st.subheader(f"{st.session_state.staff_subject} - Enter Marks")
     st.button("Logout", on_click=logout_callback)
-    
-    st.subheader(f"Enter {st.session_state.staff_subject} Marks")
-    with st.form("subject_marks_form"):
-        roll_number = st.text_input("Student Roll Number:", key="new_roll_number")
-        name = st.text_input("Student Name:", key="new_name")
-        if st.session_state.staff_subject == "POAI":
-            marks = st.number_input("POAI Marks:", min_value=0, max_value=100, key="new_pai_marks")
-        elif st.session_state.staff_subject == "SC":
-            marks = st.number_input("SC Marks:", min_value=0, max_value=100, key="new_sc_marks")
-        elif st.session_state.staff_subject == "CN":
-            marks = st.number_input("CN Marks:", min_value=0, max_value=100, key="new_cn_marks")
-        elif st.session_state.staff_subject == "OOPJ":
-            marks = st.number_input("OOPJ Marks:", min_value=0, max_value=100, key="new_oopj_marks")
-        elif st.session_state.staff_subject == "Maths":
-            marks = st.number_input("Maths Marks:", min_value=0, max_value=100, key="new_math_marks")
-        
-        st.form_submit_button("Add Marks", on_click=add_marks)
+
+    subject = st.session_state.staff_subject
+    students_df = st.session_state.master_df.reset_index()[["Roll Number", "Name"]].set_index("Roll Number")
+    student_rolls = students_df.index.tolist()
+
+    st.write(f"Enter marks for subject: **{subject}**")
+    marks_data = {}
+    with st.form(f"{subject}_marks_form"):
+        for roll, name in students_df["Name"].items():
+            marks_data[roll] = st.number_input(f"Marks for {name} ({roll}):", min_value=0, max_value=100, key=f"{subject}_{roll}", value=st.session_state.master_df.loc[roll, subject] if pd.notna(st.session_state.master_df.loc[roll, subject]) else 0)
+
+        if st.form_submit_button("Submit Marks"):
+            updated_df = st.session_state.master_df.copy()
+            for roll, mark in marks_data.items():
+                updated_df.loc[roll, subject] = mark
+            st.session_state.master_df = updated_df
+            st.success(f"Marks for {subject} updated successfully!")
 
 def student_dashboard():
-    st.subheader("Student Dashboard")
+    st.subheader("Your Marks")
     st.button("Logout", on_click=logout_callback)
-    
+
     if "student_roll_number" in st.session_state:
         roll_number = st.session_state.student_roll_number
-        st.write(f"Welcome, Student with Roll Number: {roll_number}!")
-        student_data = st.session_state.master_df[st.session_state.master_df["Roll Number"].astype(str) == roll_number].iloc[0]
+        student_data = st.session_state.master_df.loc[int(roll_number)]
         total_marks = calculate_total(student_data)
 
-        st.subheader("Your Marks:")
-        st.metric(label="POAI", value=student_data["POAI"] if pd.notna(student_data["POAI"]) else "N/A")
-        st.metric(label="SC", value=student_data["SC"] if pd.notna(student_data["SC"]) else "N/A")
-        st.metric(label="CN", value=student_data["CN"] if pd.notna(student_data["CN"]) else "N/A")
-        st.metric(label="OOPJ", value=student_data["OOPJ"] if pd.notna(student_data["OOPJ"]) else "N/A")
-        st.metric(label="Maths", value=student_data["Maths"] if pd.notna(student_data["Maths"]) else "N/A")
+        st.write(f"**Roll Number:** {roll_number}")
+        st.write(f"**Name:** {student_data['Name']}")
+
+        st.subheader("Subject-wise Marks:")
+        for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
+            st.metric(label=col, value=student_data[col] if pd.notna(student_data[col]) else "N/A")
         st.metric(label="Total Marks", value=total_marks if total_marks is not None else "N/A")
 
+        if st.button("Download Marksheet (PDF)"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll_number}", ln=1, align="C")
+            pdf.cell(200, 10, txt=f"Name: {student_data['Name']}", ln=1, align="L")
+            pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+            for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
+                mark = student_data[col] if pd.notna(student_data[col]) else "N/A"
+                pdf.cell(200, 10, txt=f"{col}: {mark}", ln=1, align="L")
+            pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+            pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
+
+            pdf_bytes = pdf.output(dest="S").encode("latin-1")
+            st.download_button(
+                label="Download PDF",
+                data=pdf_bytes,
+                file_name=f"marksheet_{roll_number}.pdf",
+                mime="application/pdf",
+            )
+
 def admin_dashboard():
-    st.subheader("Admin (HoD) Dashboard")
+    st.subheader("Admin (HoD) Dashboard - All Student Marks")
     st.button("Logout", on_click=logout_callback)
 
     if not st.session_state.master_df.empty:
-        st.subheader("Master Mark Table")
-        st.session_state.master_df["Total"] = st.session_state.master_df.apply(calculate_total, axis=1)
-        
-        display_columns = {
-            "Roll Number": "Roll No.",
-            "Name": "Student Name",
-            "POAI": "POAI",
-            "SC": "SC",
-            "CN": "CN",
-            "OOPJ": "OOPJ",
-            "Maths": "Maths",
-            "Total": "Total Marks"
-        }
+        master_df_with_total = st.session_state.master_df.copy()
+        master_df_with_total["Total"] = master_df_with_total.apply(calculate_total, axis=1)
 
-        display_df = st.session_state.master_df.rename(columns=display_columns)
-        st.dataframe(display_df)
+        st.dataframe(master_df_with_total)
+
+        if st.button("Download All Marks (CSV)"):
+            csv = master_df_with_total.to_csv(index=True).encode('utf-8')
+            st.download_button(
+                label="Download CSV",
+                data=csv,
+                file_name="all_student_marks.csv",
+                mime="text/csv",
+            )
+
+        if st.button("Download All Marksheets (PDF - Individual)"):
+            pdf_bytes_list = []
+            for roll, row in st.session_state.master_df.iterrows():
+                pdf = FPDF()
+                pdf.add_page()
+                pdf.set_font("Arial", size=12)
+                pdf.cell(200, 10, txt=f"Marksheet - Roll Number: {roll}", ln=1, align="C")
+                pdf.cell(200, 10, txt=f"Name: {row['Name']}", ln=1, align="L")
+                pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+                for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
+                    mark = row[col] if pd.notna(row[col]) else "N/A"
+                    pdf.cell(200, 10, txt=f"{col}: {mark}", ln=1, align="L")
+                pdf.cell(200, 10, txt="----------------------------------------", ln=1, align="L")
+                total_marks = calculate_total(row)
+                pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
+                pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
+
+            # Create a zip file for all PDFs
+            import io
+            import zipfile
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for i, pdf_bytes in enumerate(pdf_bytes_list):
+                    roll_number = st.session_state.master_df.index[i]
+                    zf.writestr(f"marksheet_{roll_number}.pdf", pdf_bytes)
+
+            st.download_button(
+                label="Download All Marksheets (ZIP)",
+                data=zip_buffer.getvalue(),
+                file_name="all_marksheets.zip",
+                mime="application/zip",
+            )
 
 def main():
     login()
