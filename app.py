@@ -14,7 +14,6 @@ if "staff_username" not in st.session_state:
 if "student_roll_number" not in st.session_state:
     st.session_state.student_roll_number = None
 if "master_df" not in st.session_state:
-    # Initial 5 students
     student_data = {
         "Roll Number": [231701001, 231701002, 231701003, 231701004, 231701005],
         "Name": ["AADHITH KUMAR S V", "AASHISH P", "AKASH E", "ANISH D", "ARJUN V"],
@@ -26,7 +25,6 @@ if "master_df" not in st.session_state:
     }
     st.session_state.master_df = pd.DataFrame(student_data).set_index("Roll Number")
 
-# Staff credentials and subjects
 STAFF_CREDENTIALS = {
     "preethi": {"password": "rec", "subject": "POAI"},
     "kalpana": {"password": "rec", "subject": "SC"},
@@ -35,7 +33,6 @@ STAFF_CREDENTIALS = {
     "sriram": {"password": "rec", "subject": "Maths"},
 }
 
-# Function to calculate the total marks
 def calculate_total(row):
     marks = [row["POAI"], row["SC"], row["CN"], row["OOPJ"], row["Maths"]]
     valid_marks = [mark for mark in marks if mark is not None]
@@ -100,13 +97,27 @@ def staff_dashboard():
 
     subject = st.session_state.staff_subject
     students_df = st.session_state.master_df.reset_index()[["Roll Number", "Name"]].set_index("Roll Number")
-    student_rolls = students_df.index.tolist()
 
     st.write(f"Enter marks for subject: **{subject}**")
     marks_data = {}
+
+    # Subject Analytics
+    subject_marks = st.session_state.master_df[subject]
+    st.subheader("Subject Analytics")
+    st.write(f"Average: {subject_marks.mean():.2f}")
+    st.write(f"Highest: {subject_marks.max()}")
+    st.write(f"Lowest: {subject_marks.min()}")
+    st.write(f"Missing Entries: {subject_marks.isna().sum()}")
+
     with st.form(f"{subject}_marks_form"):
         for roll, name in students_df["Name"].items():
-            marks_data[roll] = st.number_input(f"Marks for {name} ({roll}):", min_value=0, max_value=100, key=f"{subject}_{roll}", value=st.session_state.master_df.loc[roll, subject] if pd.notna(st.session_state.master_df.loc[roll, subject]) else 0)
+            marks_data[roll] = st.number_input(
+                f"Marks for {name} ({roll}):",
+                min_value=0,
+                max_value=100,
+                key=f"{subject}_{roll}",
+                value=st.session_state.master_df.loc[roll, subject] if pd.notna(st.session_state.master_df.loc[roll, subject]) else 0
+            )
 
         if st.form_submit_button("Submit Marks"):
             updated_df = st.session_state.master_df.copy()
@@ -130,7 +141,16 @@ def student_dashboard():
         st.subheader("Subject-wise Marks:")
         for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
             st.metric(label=col, value=student_data[col] if pd.notna(student_data[col]) else "N/A")
+
         st.metric(label="Total Marks", value=total_marks if total_marks is not None else "N/A")
+
+        # Class average comparison
+        class_avg = st.session_state.master_df[["POAI", "SC", "CN", "OOPJ", "Maths"]].mean(numeric_only=True)
+        st.subheader("Class Average Comparison:")
+        for col in ["POAI", "SC", "CN", "OOPJ", "Maths"]:
+            student_mark = student_data[col] if pd.notna(student_data[col]) else 0
+            avg = class_avg[col]
+            st.metric(label=f"{col} - Class Average", value=f"{avg:.2f}", delta=student_mark - avg)
 
         if st.button("Download Marksheet (PDF)"):
             pdf = FPDF()
@@ -186,14 +206,26 @@ def admin_dashboard():
         master_df_with_total["Total"] = master_df_with_total.apply(calculate_total, axis=1)
         st.dataframe(master_df_with_total)
 
+        st.subheader("Analytics Overview")
+        st.write("### Subject-wise Averages")
+        avg_df = master_df_with_total[["POAI", "SC", "CN", "OOPJ", "Maths"]].mean().reset_index()
+        avg_df.columns = ["Subject", "Average"]
+        st.dataframe(avg_df)
+
+        st.write("### Performance Chart")
+        chart_data = master_df_with_total[["POAI", "SC", "CN", "OOPJ", "Maths"]]
+        st.bar_chart(chart_data)
+
+        st.write("### Total Marks Distribution")
+        st.line_chart(master_df_with_total["Total"])
+
         st.subheader("Download Options")
         col1, col2 = st.columns(2)
         with col1:
             def download_xlsx():
                 output = io.BytesIO()
                 master_df_with_total.to_excel(output, index=True, sheet_name="Student Marks")
-                processed_data = output.getvalue()
-                return processed_data
+                return output.getvalue()
 
             xlsx_file = download_xlsx()
             st.download_button(
@@ -202,6 +234,7 @@ def admin_dashboard():
                 file_name="all_student_marks.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
+
         with col2:
             if st.button("Download All Marksheets (ZIP)"):
                 pdf_bytes_list = []
@@ -220,7 +253,6 @@ def admin_dashboard():
                     pdf.cell(200, 10, txt=f"Total Marks: {total_marks if total_marks is not None else 'N/A'}", ln=1, align="L")
                     pdf_bytes_list.append(pdf.output(dest="S").encode("latin-1"))
 
-                # Create a zip file for all PDFs
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
                     for i, pdf_bytes in enumerate(pdf_bytes_list):
